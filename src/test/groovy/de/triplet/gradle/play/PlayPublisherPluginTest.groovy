@@ -89,4 +89,24 @@ class PlayPublisherPluginTest {
         assertNotNull(project.tasks.publishListingPaidRelease)
     }
 
+    @Test
+    public void testPlaySigningConfigs() {
+        Project project = TestHelper.evaluatableProject()
+
+        project.android {
+            playAccountConfigs {
+                free {
+                    serviceAccountEmail = 'first-mail@exmaple.com'
+                    pk12File = project.file('secret.pk12')
+                }
+                paid {
+                    serviceAccountEmail = 'another-mail@exmaple.com'
+                    pk12File = project.file('another-secret.pk12')
+                }
+            }
+        }
+
+        project.evaluate()
+    }
+
 }
