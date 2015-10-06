@@ -1,9 +1,12 @@
 package de.triplet.gradle.play
 
 import com.android.build.gradle.api.ApkVariantOutput
+import com.google.api.client.googleapis.json.GoogleJsonResponseException
 import com.google.api.client.http.FileContent
+import com.google.api.services.androidpublisher.AndroidPublisher
 import com.google.api.services.androidpublisher.model.Apk
 import com.google.api.services.androidpublisher.model.ApkListing
+import com.google.api.services.androidpublisher.model.AppEdit
 import com.google.api.services.androidpublisher.model.Track
 import org.gradle.api.tasks.TaskAction
 
@@ -14,18 +17,25 @@ class PlayPublishApkTask extends PlayPublishTask {
 
     File inputFolder
 
+    static String UNIVERSAL_APK_FILENAME_PART = "-universal-"
+
     @TaskAction
     publishApk() {
         super.publish()
 
-        def apkOutput = variant.outputs.find { variantOutput -> variantOutput instanceof ApkVariantOutput }
-        FileContent newApkFile = new FileContent(AndroidPublisherHelper.MIME_TYPE_APK, apkOutput.outputFile)
+        def apkOutputs = variant.outputs.findAll { variantOutput -> variantOutput instanceof ApkVariantOutput &&
+                !variantOutput.outputFile.name.contains(UNIVERSAL_APK_FILENAME_PART) }
 
-        Apk apk = edits.apks()
-                .upload(variant.applicationId, editId, newApkFile)
-                .execute()
+        apkOutputs.each { apkOutput ->
 
-        Track newTrack = new Track().setVersionCodes([apk.getVersionCode()])
+            logger.lifecycle("Uploading " + apkOutput.outputFile.name)
+            FileContent newApkFile = new FileContent(AndroidPublisherHelper.MIME_TYPE_APK, apkOutput.outputFile)
+            Apk apk = edits.apks()
+                    .upload(variant.applicationId, editId, newApkFile)
+                    .execute()
+        };
+
+        Track newTrack = new Track().setVersionCodes(apkOutputs.collectAll {it.versionCode})
         if (extension.track?.equals("rollout")) {
             newTrack.setUserFraction(extension.userFraction)
         }
