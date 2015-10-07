@@ -23,11 +23,14 @@ class PlayPublishApkTask extends PlayPublishTask {
     publishApk() {
         super.publish()
 
-        def apkOutputs = variant.outputs.findAll { variantOutput -> variantOutput instanceof ApkVariantOutput &&
-                !variantOutput.outputFile.name.contains(UNIVERSAL_APK_FILENAME_PART) }
 
+        def apkOutputs = variant.outputs.findAll { variantOutput -> variantOutput instanceof ApkVariantOutput &&
+                variantOutput.outputFile != null && variantOutput.outputFile.name != null && !variantOutput.outputFile.name.contains(UNIVERSAL_APK_FILENAME_PART) }
+
+        logger.debug("apkOutputs: " + apkOutputs)
         apkOutputs.each { apkOutput ->
 
+            logger.debug("OutputFile" + apkOutput.outputFile)
             logger.lifecycle("Uploading " + apkOutput.outputFile.name)
             FileContent newApkFile = new FileContent(AndroidPublisherHelper.MIME_TYPE_APK, apkOutput.outputFile)
             Apk apk = edits.apks()
